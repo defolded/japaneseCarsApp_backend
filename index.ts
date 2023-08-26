@@ -2,7 +2,18 @@ import express from 'express'
 
 const app = express()
 const port = 3000
-    
+
+app.use(express.json());
+
+interface carListingType {
+    id: number
+    make: string
+    model: string
+    year: number
+    price: number
+    imageUrl: string | null
+}
+
 const db = {
     carsListings: [
         {
@@ -101,21 +112,20 @@ const db = {
             price: 20500,
             imageUrl: 'https://example.com/nissan-maxima.jpg',
         },
-    ]
+    ] as carListingType[]
 }
 
 app.get('/cars', (req, res) => {
-    res.json(db.carsListings)
-})
+    const { make } = req.query;
 
-app.get('/cars', (req, res) => {
-    let foundListing = db.carsListings
-    if (req.query.make) {
-        foundListing = foundListing.filter(e => e.make.indexOf(req.query.make as string) > -1)
+    if (!make) {
+        res.json(db.carsListings);
+    } else {
+        // @ts-ignore
+        const foundListings = db.carsListings.filter(e => e.make.toLowerCase() === make.toLowerCase());
+        res.json(foundListings);
     }
-
-    res.json(foundListing)
-})
+});
 
 app.get('/cars/:carId', (req, res) => {
     const foundListing = db.carsListings.find(e => e.id === +req.params.carId)
@@ -126,6 +136,36 @@ app.get('/cars/:carId', (req, res) => {
     }
 
     res.json(foundListing)
+})
+
+app.post('/cars', (req, res) => {
+    if (req.body && req.body.make && req.body.model && req.body.year && req.body.price) {
+        const newCarEntry = {
+            id: db.carsListings[db.carsListings.length - 1].id + 1,
+            make: req.body.make,
+            model: req.body.model,
+            year: req.body.year,
+            price: req.body.price,
+            imageUrl: null
+        }
+        db.carsListings.push(newCarEntry)
+        res.status(201).json(newCarEntry)
+    } else {
+        res.sendStatus(400)
+        return
+    }
+})
+
+app.delete('/cars/:carId', (req, res) => {
+    if (req.params.carId) {
+        if (db.carsListings.filter(e => e.id === +req.params.carId).length > 0) {
+            db.carsListings = db.carsListings.filter(e => e.id !== +req.params.carId)
+            res.sendStatus(204)
+        } else {
+            res.sendStatus(400)
+            return
+        }
+    }
 })
 
 app.listen(port, () => {
