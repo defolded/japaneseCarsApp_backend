@@ -1,4 +1,4 @@
-import express from 'express'
+import express, { Request, Response } from 'express'
 
 const app = express()
 const port = 3000
@@ -115,19 +115,18 @@ const db = {
     ] as carListingType[]
 }
 
-app.get('/cars', (req, res) => {
+app.get('/cars', (req: Request<{}, {}, {}, { make?: string}>, res: Response<carListingType[]>) => {
     const { make } = req.query;
 
     if (!make) {
         res.json(db.carsListings);
     } else {
-        // @ts-ignore
         const foundListings = db.carsListings.filter(e => e.make.toLowerCase() === make.toLowerCase());
         res.json(foundListings);
     }
 });
 
-app.get('/cars/:carId', (req, res) => {
+app.get('/cars/:carId', (req: Request<{ carId: string }>, res) => {
     const foundListing = db.carsListings.find(e => e.id === +req.params.carId)
 
     if (!foundListing) {
@@ -138,7 +137,7 @@ app.get('/cars/:carId', (req, res) => {
     res.json(foundListing)
 })
 
-app.post('/cars', (req, res) => {
+app.post('/cars', (req: Request<{}, {}, { make: string, model: string, year: number, price: number }>, res: Response<carListingType>) => {
     if (req.body && req.body.make && req.body.model && req.body.year && req.body.price) {
         const newCarEntry = {
             id: db.carsListings[db.carsListings.length - 1].id + 1,
@@ -156,7 +155,7 @@ app.post('/cars', (req, res) => {
     }
 })
 
-app.delete('/cars/:carId', (req, res) => {
+app.delete('/cars/:carId', (req: Request<{ carId: string }>, res) => {
     if (req.params.carId) {
         if (db.carsListings.filter(e => e.id === +req.params.carId).length > 0) {
             db.carsListings = db.carsListings.filter(e => e.id !== +req.params.carId)
@@ -170,4 +169,4 @@ app.delete('/cars/:carId', (req, res) => {
 
 app.listen(port, () => {
     console.log(`Example app listening on port ${port}`)
-  })
+})
